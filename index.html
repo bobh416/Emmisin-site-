@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <title>حاسبة الانبعاثات مع وضع Dark/Light</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* الوضع الافتراضي - Light Mode */
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      padding: 20px;
+      background: #f9f9f9;
+      color: #222;
+      max-width: 700px;
+      margin: auto;
+      transition: background-color 0.4s, color 0.4s;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 15px;
+    }
+    .welcome-msg {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+      color: #555;
+    }
+    .fuel-options {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    .fuel-option {
+      position: relative;
+      padding: 12px 24px;
+      border-radius: 25px;
+      background-color: #e0e0e0;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      font-weight: 600;
+      color: #444;
+      box-shadow: inset 0 0 0 2px transparent;
+      flex: 1 0 auto;
+      text-align: center;
+    }
+    .fuel-option:hover {
+      background-color: #d0d0d0;
+    }
+    .fuel-option input[type="radio"] {
+      display: none;
+    }
+    .fuel-option input[type="radio"]:checked + label {
+      background-color: #4a90e2;
+      color: white;
+      box-shadow: 0 0 8px #4a90e2aa;
+    }
+    input[type="radio"] + label {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 12px 24px;
+      border-radius: 25px;
+      cursor: pointer;
+    }
+    label {
+      cursor: pointer;
+    }
+    input[type="number"], select {
+      padding: 10px;
+      font-size: 1rem;
+      width: 150px;
+      border-radius: 8px;
+      border: 1.5px solid #ccc;
+      transition: border-color 0.3s ease;
+      margin-bottom: 15px;
+      display: block;
+      margin-right: auto;
+      margin-left: auto;
+      text-align: center;
+      background: white;
+      color: #222;
+    }
+    input[type="number"]:focus, select:focus {
+      border-color: #4a90e2;
+      outline: none;
+    }
+    button {
+      background-color: #4a90e2;
+      border: none;
+      color: white;
+      padding: 12px 28px;
+      font-size: 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 15px;
+      font-weight: 600;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 3px 6px #4a90e266;
+    }
+    button:hover {
+      background-color: #357abd;
+    }
+    #result {
+      margin-top: 25px;
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px #ccc;
+      padding: 20px;
+      color: #222;
+      transition: background-color 0.4s, color 0.4s;
+    }
+    #result ul {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    #result li {
+      padding: 6px 0;
+      font-size: 1.1rem;
+    }
+    #chartContainer {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto 40px auto;
+    }
+
+    .toggle-container {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .toggle-btn {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      padding: 10px 22px;
+      font-size: 1rem;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-weight: 600;
+      box-shadow: 0 3px 6px #4a90e266;
+      margin: 5px auto;
+      display: block;
+    }
+
+    .toggle-btn:hover {
+      background-color: #357abd;
+    }
+
+    #unitInfo {
+      margin: 30px 0;
+      padding: 20px;
+      background: #eef5ff;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px #ccc;
+      transition: background-color 0.4s, color 0.4s;
+      display: none;
+    }
+
+    body.dark-mode {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+    body.dark-mode h1 {
+      color: #aad8ff;
+    }
+    body.dark-mode .welcome-msg {
+      color: #a0b8d7;
+    }
+    body.dark-mode .fuel-option {
+      background-color: #2c2c2c;
+      color: #ddd;
+      box-shadow: inset 0 0 0 2px #555;
+    }
+    body.dark-mode .fuel-option:hover {
+      background-color: #3a3a3a;
+    }
+    body.dark-mode .fuel-option input[type="radio"]:checked + label {
+      background-color: #6699ff;
+      color: white;
+      box-shadow: 0 0 8px #6699ffaa;
+    }
+    body.dark-mode input[type="number"], 
+    body.dark-mode select {
+      background-color: #1e1e1e;
+      color: #ddd;
+      border: 1.5px solid #555;
+    }
+    body.dark-mode input[type="number"]:focus, 
+    body.dark-mode select:focus {
+      border-color: #6699ff;
+    }
+    body.dark-mode button,
+    body.dark-mode .toggle-btn {
+      background-color: #6699ff;
+      box-shadow: 0 3px 6px #6699ff66;
+    }
+    body.dark-mode button:hover,
+    body.dark-mode .toggle-btn:hover {
+      background-color: #5577cc;
+    }
+    body.dark-mode #result {
+      background-color: #1e1e1e;
+      color: #ddd;
+      box-shadow: 0 2px 6px #222;
+    }
+    body.dark-mode #unitInfo {
+      background-color: #1e1e1e;
+      color: #ddd;
+      box-shadow: 0 2px 6px #222;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>مرحباً بكم في حاسبة الانبعاثات</h1>
+  <p class="welcome-msg">
+     طلاب برنامج المساحة ونظم المعلومات جغرافية 2025 <br>
+    الفرقة الرابعة ترحب بكم
+  </p>
+
+  <div class="toggle-container">
+    <button id="toggleModeBtn" class="toggle-btn">تفعيل الوضع الداكن</button>
+    <button id="toggleUnitInfoBtn" class="toggle-btn">عرض ناتج احتراق وحده واحده لكل نوع من الوقود</button>
+  </div>
+
+  <div id="unitInfo">
+    <h3 style="text-align:center; margin-bottom: 15px;">  </h3>
+    <ul id="unitList" style="list-style: none; padding: 0; text-align: center;"></ul>
+  </div>
+
+  <h2>اختر نوع الوقود</h2>
+  <div class="fuel-options">
+    <div class="fuel-option">
+      <input type="radio" id="benzene" name="fuel" value="بنزين" />
+      <label for="benzene">بنزين</label>
+    </div>
+    <div class="fuel-option">
+      <input type="radio" id="diesel" name="fuel" value="سولار" />
+      <label for="diesel">سولار</label>
+    </div>
+    <div class="fuel-option">
+      <input type="radio" id="naturalGas" name="fuel" value="غاز طبيعي" />
+      <label for="naturalGas">غاز طبيعي</label>
+    </div>
+    <div class="fuel-option">
+      <input type="radio" id="coal" name="fuel" value="فحم" />
+      <label for="coal">فحم</label>
+    </div>
+  </div>
+
+  <label for="quantity">أدخل الكمية (لتر أو كجم):</label>
+  <input type="number" id="quantity" min="0" placeholder="مثلاً: 100" />
+
+  <label for="chartType">اختر نوع الرسم البياني:</label>
+  <select id="chartType">
+    <option value="bar">عمودي</option>
+    <option value="line">خطي</option>
+    <option value="pie">دائري</option>
+  </select>
+
+  <button id="calcBtn">احسب الانبعاثات</button>
+
+  <div id="result"></div>
+
+  <div id="chartContainer">
+    <canvas id="emissionChart"></canvas>
+  </div>
+
+  <script>
+    const fuelData = {
+      "بنزين": { CO2: 2.31, CO: 0.05, NOx: 0.02, PM: 0.01 },
+      "سولار": { CO2: 2.68, CO: 0.07, NOx: 0.05, PM: 0.03 },
+      "غاز طبيعي": { CO2: 2.75, CO: 0.03, NOx: 0.01, PM: 0.005 },
+      "فحم": { CO2: 2.42, CO: 0.1, NOx: 0.08, PM: 0.04 }
+    };
+
+    let chart;
+
+    document.getElementById('calcBtn').onclick = function() {
+      const fuelRadios = document.querySelectorAll('input[name="fuel"]');
+      let selectedFuel = null;
+      fuelRadios.forEach(radio => {
+        if (radio.checked) selectedFuel = radio.value;
+      });
+
+      const qty = parseFloat(document.getElementById('quantity').value);
+      const chartType = document.getElementById('chartType').value;
+      const resultDiv = document.getElementById('result');
+
+      if (!selectedFuel || isNaN(qty) || qty <= 0) {
+        resultDiv.textContent = 'يرجى اختيار نوع الوقود وإدخال كمية صحيحة أكبر من صفر.';
+        if(chart) chart.destroy();
+        return;
+      }
+
+      const emissions = fuelData[selectedFuel];
+      const total = {
+        CO2: +(emissions.CO2 * qty).toFixed(2),
+        CO: +(emissions.CO * qty).toFixed(2),
+        NOx: +(emissions.NOx * qty).toFixed(2),
+        PM: +(emissions.PM * qty).toFixed(2)
+      };
+
+      resultDiv.innerHTML = `
+        <ul>
+          <li>ثاني أكسيد الكربون (CO₂): ${total.CO2} كجم</li>
+          <li>أول أكسيد الكربون (CO): ${total.CO} كجم</li>
+          <li>أكاسيد النيتروجين (NOₓ): ${total.NOx} كجم</li>
+          <li>الجسيمات الدقيقة (PM): ${total.PM} كجم</li>
+        </ul>
+      `;
+
+      if(chart) chart.destroy();
+
+      const ctx = document.getElementById('emissionChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: chartType,
+        data: {
+          labels: ['CO₂', 'CO', 'NOₓ', 'PM'],
+          datasets: [{
+            label: 'كمية الانبعاثات بالكيلوغرام',
+            data: [total.CO2, total.CO, total.NOx, total.PM],
+            backgroundColor: [
+              'rgba(75, 192, 192, 0.6)',
+              'rgba(54, 162, 235, 0.6)',
+              'rgba(255, 206, 86, 0.6)',
+              'rgba(255, 99, 132, 0.6)'
+            ],
+            borderColor: [
+              'rgba(75, 192, 192, 1)',
+              'rgba(54, 162, 235, 1)',
+              'rgba(255, 206, 86, 1)',
+              'rgba(255, 99, 132, 1)'
+            ],
+            borderWidth: 1,
+            fill: chartType === 'line' ? false : true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: chartType !== 'bar',
+              position: 'bottom',
+              labels: {
+                color: document.body.classList.contains('dark-mode') ? '#eee' : '#222'
+              }
+            },
+            title: {
+              display: true,
+              text: `رسم بياني لانبعاثات ${selectedFuel}`,
+              font: {
+                size: 18
+              },
+              color: document.body.classList.contains('dark-mode') ? '#aad8ff' : '#2c3e50'
+            }
+          },
+          scales: (chartType === 'bar' || chartType === 'line') ? {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'كمية الانبعاثات (كجم)',
+                color: document.body.classList.contains('dark-mode') ? '#ddd' : '#222'
+              },
+              ticks: {
+                color: document.body.classList.contains('dark-mode') ? '#ddd' : '#222'
+              }
+            },
+            x: {
+              ticks: {
+                color: document.body.classList.contains('dark-mode') ? '#ddd' : '#222'
+              }
+            }
+          } : {}
+        }
+      });
+    };
+
+    document.getElementById('toggleModeBtn').onclick = function() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      this.textContent = isDark ? 'تفعيل الوضع النهاري' : 'تفعيل الوضع الداكن';
+      if(chart) {
+        chart.options.plugins.legend.labels.color = isDark ? '#eee' : '#222';
+        chart.options.plugins.title.color = isDark ? '#aad8ff' : '#2c3e50';
+        if(chart.options.scales) {
+          if(chart.options.scales.y) {
+            chart.options.scales.y.title.color = isDark ? '#ddd' : '#222';
+            chart.options.scales.y.ticks.color = isDark ? '#ddd' : '#222';
+          }
+          if(chart.options.scales.x) {
+            chart.options.scales.x.ticks.color = isDark ? '#ddd' : '#222';
+          }
+        }
+        chart.update();
+      }
+    };
+
+    document.getElementById('toggleUnitInfoBtn').onclick = function() {
+      const unitInfo = document.getElementById('unitInfo');
+      if (unitInfo.style.display === 'none' || unitInfo.style.display === '') {
+        unitInfo.style.display = 'block';
+        this.textContent = 'إخفاء ';
+      } else {
+        unitInfo.style.display = 'none';
+        this.textContent = ' عرض ناتج احتراق وحده واحده لكل نوع من الوقود';
+      }
+    };
+
+    const unitList = document.getElementById('unitList');
+    for (let fuel in fuelData) {
+      const gases = fuelData[fuel];
+      const li = document.createElement('li');
+      li.style.marginBottom = '10px';
+      li.innerHTML = `<strong>${fuel}</strong>: CO₂ = ${gases.CO2} كجم، CO = ${gases.CO} كجم، NOₓ = ${gases.NOx} كجم، PM = ${gases.PM} كجم`;
+      unitList.appendChild(li);
+    }
+  </script>
+
+</body>
+</html>
